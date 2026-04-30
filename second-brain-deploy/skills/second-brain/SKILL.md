@@ -15,17 +15,15 @@ Route on the first word of the args after `/second-brain`:
 
 | Subcommand | What to do |
 |---|---|
-| `query <q>` or no subcommand with text | Run `python C:/Users/jake/.claude/skills/second-brain/scripts/query.py "<q>"` and report top matches with paths and excerpts |
+| `query <q>` or no subcommand with text | Run `python <SKILL_DIR>/scripts/query.py "<q>"` and report top matches with paths and excerpts |
 | `show <path>` | Read the file at `~/.claude/second-brain/<path>` and print it cleanly |
-| `ingest <url-or-path>` | Run `python .../scripts/ingest.py "<arg>"` to capture a URL or local file as a KB note |
-| `consolidate` | Run `python .../scripts/consolidate.py` — regenerates INDEX, rebuilds metadata, reports near-duplicates |
-| `publish` | Run `python .../scripts/publish.py` — commits and pushes to the configured `<repo>.wiki.git` remote |
+| `ingest <url-or-path>` | Run `python <SKILL_DIR>/scripts/ingest.py "<arg>"` to capture a URL or local file as a KB note |
+| `consolidate` | Run `python <SKILL_DIR>/scripts/consolidate.py` — regenerates INDEX, rebuilds metadata, reports near-duplicates |
+| `publish` | Run `python <SKILL_DIR>/scripts/publish.py` — commits and pushes to the configured `<repo>.wiki.git` remote |
 | `config` | Read `~/.claude/second-brain/.config.json`, ask user what to change, then update it |
 | `config --set-model <op> <model>` | Set the model for a specific operation (extractor, ingest). E.g. `config --set-model extractor claude-opus-4-7` |
 | `status` | Show counts (notes per category), publish target, auto-capture toggle |
 | `help` or (no args) | Show detailed help (all subcommands, examples, how it works) |
-
-The scripts directory is at `C:/Users/jake/.claude/skills/second-brain/scripts/`. Always pass the full Windows-style path to `python`.
 
 ## Layout reference
 
@@ -66,7 +64,7 @@ If `.config.json`'s `publish.remote_url` is empty, ask the user for their `<repo
 ## Routing help requests
 
 When the user runs `/second-brain` with no arguments, or asks for `/second-brain help`:
-- Run `python C:/Users/jake/.claude/skills/second-brain/scripts/help.py`
+- Run `python <SKILL_DIR>/scripts/help.py`
 - Print the output verbatim
 
 ## Notes on output
