@@ -1,0 +1,48 @@
+{
+  "auto_capture": true,
+  "auto_inject": true,
+  "blocklist_patterns": [
+    "(?i)api[_-]?key\\s*[:=]\\s*['\"]?[A-Za-z0-9_\\-]{16,}",
+    "(?i)secret[_-]?key\\s*[:=]\\s*['\"]?[A-Za-z0-9_\\-]{16,}",
+    "(?i)password\\s*[:=]\\s*['\"]?\\S{4,}",
+    "(?i)bearer\\s+[A-Za-z0-9_\\-\\.]{20,}",
+    "(?i)aws_secret_access_key\\s*[:=]",
+    "sk-[A-Za-z0-9]{20,}",
+    "ghp_[A-Za-z0-9]{20,}",
+    "xox[baprs]-[A-Za-z0-9-]{10,}"
+  ],
+  "models": {
+    "extractor": "claude-haiku-4-5-20251001",
+    "ingest": "claude-haiku-4-5-20251001",
+    "embedder": "local:bge-small-en-v1.5"
+  },
+  "embeddings": {
+    "provider": "local",
+    "model": "BAAI/bge-small-en-v1.5",
+    "dim": 384,
+    "chunk_target_words": 500,
+    "chunk_overlap_words": 50
+  },
+  "publish": {
+    "auto_commit_message": "kb: sync from second-brain",
+    "branch": "master",
+    "remote_url": ""
+  },
+  "retrieval": {
+    "excerpt_chars": 200,
+    "max_notes": 5,
+    "max_total_chars": 8000,
+    "fts_top_k": 30,
+    "vec_top_k": 30,
+    "rrf_k": 60,
+    "min_rrf_score": 0.0153
+  },
+  "valid_categories": [
+    "concepts",
+    "recipes",
+    "references",
+    "decisions",
+    "tools",
+    "domains"
+  ]
+}

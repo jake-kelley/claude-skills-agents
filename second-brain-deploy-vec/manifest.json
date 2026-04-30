@@ -1,0 +1,64 @@
+{
+  "name": "second-brain",
+  "version": "1.1.0",
+  "description": "Automatic Markdown KB for Claude Code with hybrid sqlite-vec + FTS retrieval",
+  "author": "jake-kelley",
+  "claude_code_version": ">=1.0.0",
+  "components": {
+    "hooks": [
+      {
+        "name": "kb-capture",
+        "file": "hooks/kb-capture.py",
+        "hook_type": "Stop",
+        "async": true,
+        "timeout": 600
+      },
+      {
+        "name": "kb-inject",
+        "file": "hooks/kb-inject.py",
+        "hook_type": "UserPromptSubmit",
+        "async": false,
+        "timeout": 10
+      }
+    ],
+    "agents": [
+      {
+        "name": "kb-extractor",
+        "file": "agents/kb-extractor.md",
+        "model": "claude-haiku-4-5-20251001"
+      }
+    ],
+    "skills": [
+      {
+        "name": "second-brain",
+        "file": "skills/second-brain/SKILL.md",
+        "scripts": [
+          "skills/second-brain/scripts/db.py",
+          "skills/second-brain/scripts/embed.py",
+          "skills/second-brain/scripts/reindex.py",
+          "skills/second-brain/scripts/_rrf.py",
+          "skills/second-brain/scripts/_text.py",
+          "skills/second-brain/scripts/query.py",
+          "skills/second-brain/scripts/show.py",
+          "skills/second-brain/scripts/publish.py",
+          "skills/second-brain/scripts/consolidate.py",
+          "skills/second-brain/scripts/ingest.py",
+          "skills/second-brain/scripts/config.py",
+          "skills/second-brain/scripts/status.py",
+          "skills/second-brain/scripts/help.py"
+        ]
+      }
+    ],
+    "storage_templates": [
+      "templates/second-brain/README.md",
+      "templates/second-brain/.config.json"
+    ]
+  },
+  "requires": [
+    "python>=3.9",
+    "claude-cli",
+    "pip:sqlite-vec>=0.1.6",
+    "pip:fastembed>=0.3.0"
+  ],
+  "install_path": "~/.claude"
+}
