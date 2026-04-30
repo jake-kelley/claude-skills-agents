@@ -81,73 +81,188 @@ def make_executable(path: Path) -> None:
         os.chmod(path, 0o755)
 
 
+def check_existing_hooks(settings: dict, hook_name: str, script_name: str) -> bool:
+    """Check if a specific second-brain hook already exists."""
+    if "hooks" not in settings or hook_name not in settings["hooks"]:
+        return False
+
+    for hook_group in settings["hooks"][hook_name]:
+        if "hooks" in hook_group:
+            for hook in hook_group["hooks"]:
+                if hook.get("type") == "command" and script_name in str(hook.get("command", "")):
+                    return True
+    return False
+
+
+def prompt_hook_action(hook_name: str, existing_count: int) -> str:
+    """Prompt user for action when existing hooks are detected."""
+    print(f"\n⚠️  Existing {hook_name} hooks detected ({existing_count} hook(s))")
+    print(f"   The second-brain skill needs to add its hook to {hook_name}.")
+    print()
+    print("   Options:")
+    print("   1. Append - Add second-brain hook, keep existing hooks (recommended)")
+    print("   2. Replace - Replace all hooks with only second-brain hook")
+    print("   3. Skip - Don't modify this hook (skill may not work correctly)")
+    print()
+
+    while True:
+        choice = input("   Enter your choice [1-3] (default: 1): ").strip() or "1"
+        if choice in ["1", "2", "3"]:
+            return {"1": "append", "2": "replace", "3": "skip"}[choice]
+        print("   Invalid choice. Please enter 1-3.")
+
+
 def update_settings_json(claude_dir: Path, source_dir: Path, dry_run: bool = False) -> None:
     """Update settings.json with hook configurations."""
     settings_path = claude_dir / "settings.json"
-    
+
     # Load existing settings or create new
     settings = load_json(settings_path)
-    
+
     # Ensure hooks section exists
     if "hooks" not in settings:
         settings["hooks"] = {}
-    
+
     hooks_dir = claude_dir / "hooks"
-    
-    # Configure UserPromptSubmit hook
-    settings["hooks"]["UserPromptSubmit"] = [
-        {
-            "hooks": [
-                {
-                    "type": "command",
-                    "command": f"{get_python_executable()} {hooks_dir / 'kb-inject.py'}",
-                    "timeout": 10
-                }
-            ]
-        }
-    ]
-    
-    # Configure Stop hook
-    settings["hooks"]["Stop"] = [
-        {
-            "hooks": [
-                {
-                    "type": "command",
-                    "command": f"{get_python_executable()} {hooks_dir / 'kb-capture.py'}",
-                    "timeout": 600,
-                    "async": True
-                }
-            ]
-        }
-    ]
-    
+
+    # Define the hooks we want to add
+    kb_inject_hook = {
+        "hooks": [
+            {
+                "type": "command",
+                "command": f"{get_python_executable()} {hooks_dir / 'kb-inject.py'}",
+                "timeout": 10
+            }
+        ]
+    }
+
+    kb_capture_hook = {
+        "hooks": [
+            {
+                "type": "command",
+                "command": f"{get_python_executable()} {hooks_dir / 'kb-capture.py'}",
+                "timeout": 600,
+                "async": True
+            }
+        ]
+    }
+
+    # Process UserPromptSubmit hook
+    if not check_existing_hooks(settings, "UserPromptSubmit", "kb-inject.py"):
+        existing_hooks = settings["hooks"].get("UserPromptSubmit", [])
+
+        if existing_hooks and not dry_run:
+            action = prompt_hook_action("UserPromptSubmit", len(existing_hooks))
+            if action == "append":
+                settings["hooks"]["UserPromptSubmit"] = existing_hooks + [kb_inject_hook]
+                print("   ✓ Appended kb-inject.py hook to UserPromptSubmit")
+            elif action == "replace":
+                settings["hooks"]["UserPromptSubmit"] = [kb_inject_hook]
+                print("   ✓ Replaced UserPromptSubmit hooks with kb-inject.py")
+            else:  # skip
+                print("   ⊘ Skipped UserPromptSubmit hook modification")
+        else:
+            # No existing hooks or dry run - just set it
+            settings["hooks"]["UserPromptSubmit"] = [kb_inject_hook]
+            if not dry_run:
+                print("   ✓ Configured UserPromptSubmit hook")
+    else:
+        print("   ⊘ kb-inject.py hook already exists in UserPromptSubmit")
+
+    # Process Stop hook
+    if not check_existing_hooks(settings, "Stop", "kb-capture.py"):
+        existing_hooks = settings["hooks"].get("Stop", [])
+
+        if existing_hooks and not dry_run:
+            action = prompt_hook_action("Stop", len(existing_hooks))
+            if action == "append":
+                settings["hooks"]["Stop"] = existing_hooks + [kb_capture_hook]
+                print("   ✓ Appended kb-capture.py hook to Stop")
+            elif action == "replace":
+                settings["hooks"]["Stop"] = [kb_capture_hook]
+                print("   ✓ Replaced Stop hooks with kb-capture.py")
+            else:  # skip
+                print("   ⊘ Skipped Stop hook modification")
+        else:
+            # No existing hooks or dry run - just set it
+            settings["hooks"]["Stop"] = [kb_capture_hook]
+            if not dry_run:
+                print("   ✓ Configured Stop hook")
+    else:
+        print("   ⊘ kb-capture.py hook already exists in Stop")
+
     save_json(settings_path, settings, dry_run)
 
 
-def create_storage_tree(claude_dir: Path, source_dir: Path, dry_run: bool = False) -> None:
+def prompt_for_model() -> str:
+    """Prompt user to select a model for knowledge base operations."""
+    models = {
+        "1": ("claude-haiku-4-5-20251001", "Haiku 4.5 (fastest, cheapest, recommended)"),
+        "2": ("claude-sonnet-4-6", "Sonnet 4.6 (balanced)"),
+        "3": ("claude-opus-4-7", "Opus 4.7 (most capable, expensive)"),
+        "4": ("custom", "Enter a custom model ID"),
+    }
+
+    print("\n🤖 Select model for knowledge base operations:")
+    print("   (Used for extracting facts and ingesting content)")
+    print()
+    for key, (model_id, desc) in models.items():
+        print(f"   {key}. {desc}")
+    print()
+
+    while True:
+        choice = input("Enter your choice [1-4] (default: 1): ").strip() or "1"
+        if choice in models:
+            selected_model, description = models[choice]
+            if choice == "4":
+                # Custom model ID
+                print("\n   Example: us-gov.anthropic.claude-sonnet-4-5-20250929-v1:0")
+                custom_id = input("   Enter custom model ID: ").strip()
+                if custom_id:
+                    print(f"   ✓ Selected: {custom_id}")
+                    return custom_id
+                else:
+                    print("   Invalid model ID. Please try again.")
+                    continue
+            print(f"   ✓ Selected: {description}")
+            return selected_model
+        print("   Invalid choice. Please enter 1-4.")
+
+
+def create_storage_tree(claude_dir: Path, source_dir: Path, dry_run: bool = False, model_id: Optional[str] = None) -> None:
     """Create the second-brain storage directory structure."""
     kb_root = claude_dir / "second-brain"
-    
+
     print("\n📁 Creating storage tree...")
-    
+
     # Create category directories
     categories = ["concepts", "recipes", "references", "decisions", "tools", "domains"]
     for cat in categories:
         ensure_dir(kb_root / cat, dry_run)
-    
+
     # Create metadata directory
     ensure_dir(kb_root / ".metadata", dry_run)
-    
+
     # Copy template files if they don't exist
     template_dir = source_dir / "templates" / "second-brain"
-    
+
     readme_dst = kb_root / "README.md"
     if not readme_dst.exists() or dry_run:
         copy_file(template_dir / "README.md", readme_dst, dry_run)
-    
+
     config_dst = kb_root / ".config.json"
     if not config_dst.exists() or dry_run:
         copy_file(template_dir / ".config.json", config_dst, dry_run)
+
+        # Update config with selected model
+        if not dry_run and model_id:
+            config = load_json(config_dst)
+            if "models" not in config:
+                config["models"] = {}
+            config["models"]["extractor"] = model_id
+            config["models"]["ingest"] = model_id
+            save_json(config_dst, config, dry_run=False)
+            print(f"   ✓ Configured models: {model_id}")
 
 
 def install_hooks(claude_dir: Path, source_dir: Path, dry_run: bool = False) -> None:
@@ -309,13 +424,18 @@ Examples:
     ensure_dir(claude_dir / "agents", args.dry_run)
     ensure_dir(claude_dir / "skills", args.dry_run)
     
+    # Prompt for model selection (skip in dry-run mode)
+    model_id = None
+    if not args.dry_run:
+        model_id = prompt_for_model()
+
     # Install components
     try:
         install_hooks(claude_dir, source_dir, args.dry_run)
         install_agents(claude_dir, source_dir, args.dry_run)
         install_skills(claude_dir, source_dir, args.dry_run)
-        create_storage_tree(claude_dir, source_dir, args.dry_run)
-        
+        create_storage_tree(claude_dir, source_dir, args.dry_run, model_id)
+
         print("\n⚙️  Updating settings.json...")
         update_settings_json(claude_dir, source_dir, args.dry_run)
         
