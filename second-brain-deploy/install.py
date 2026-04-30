@@ -313,7 +313,8 @@ def install_skills(claude_dir: Path, source_dir: Path, dry_run: bool = False) ->
         "ingest.py",
         "config.py",
         "status.py",
-        "help.py"
+        "help.py",
+        "show.py"
     ]
     
     for script in script_files:
