@@ -34,6 +34,7 @@
         "file": "skills/second-brain/SKILL.md",
         "scripts": [
           "skills/second-brain/scripts/query.py",
+          "skills/second-brain/scripts/show.py",
           "skills/second-brain/scripts/publish.py",
           "skills/second-brain/scripts/consolidate.py",
           "skills/second-brain/scripts/ingest.py",

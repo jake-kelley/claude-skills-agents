@@ -21,6 +21,7 @@ second-brain-deploy/
 │       ├── SKILL.md       # Skill definition
 │       └── scripts/
 │           ├── query.py
+│           ├── show.py
 │           ├── publish.py
 │           ├── consolidate.py
 │           ├── ingest.py
@@ -104,7 +105,7 @@ After every assistant turn:
 
 Before every user prompt:
 1. The user's prompt is analyzed for keywords
-2. The KB is searched for relevant notes (BM25 scoring)
+2. The KB is searched for relevant notes (weighted keyword matching: title 4x, tags 3x, body 1x)
 3. Top 5 notes are injected as system context
 4. Claude sees relevant background without explicit queries
 
